@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Kontrol lampu ESP32 secara real-time menggunakan Firebase Realtime Database.">
+  <title>ESP32 · Smart Light Control</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+    :root{color-scheme:dark;--bg:#080e19;--panel:#111b2b;--panel2:#152237;--line:#25344a;--muted:#91a0b7;--text:#edf3ff;--green:#42d392;--yellow:#ffc96b;--red:#ff727e;--blue:#76a9ff}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 80% 0%,#162b48 0,transparent 38%),var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+    .wrap{width:min(100% - 36px,1050px);margin:auto;padding:30px 0 36px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:48px}
+    .brand{display:flex;align-items:center;gap:12px}.brand-icon{width:43px;height:43px;border:1px solid #344966;background:#172943;border-radius:14px;display:grid;place-items:center;color:var(--blue);font-size:21px}.brand-name{font:700 16px 'Space Grotesk';letter-spacing:.2px}.brand-sub{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:1.2px;text-transform:uppercase}
+    .connection{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1px solid var(--line);border-radius:30px;background:#101a29;font-size:12px;color:var(--muted)}.dot{width:8px;height:8px;border-radius:50%;background:#75849a;box-shadow:0 0 0 4px #75849a20}.connection.online{color:var(--green);border-color:#28664f}.connection.online .dot{background:var(--green);box-shadow:0 0 0 4px #42d39220}.connection.error{color:var(--red);border-color:#713744}.connection.error .dot{background:var(--red)}
+    .intro{margin-bottom:30px}.eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--blue);text-transform:uppercase}.intro h1{font:700 clamp(30px,5vw,47px)/1.1 'Space Grotesk';letter-spacing:-1.7px;margin:12px 0}.intro p{color:var(--muted);font-size:14px;line-height:1.7;margin:0;max-width:560px}
+    .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:28px 0}.stat{padding:17px 19px;border:1px solid var(--line);border-radius:15px;background:#101a29}.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}.stat-value{font:700 23px 'Space Grotesk';margin-top:8px}.stat-value small{font:500 12px 'DM Sans';color:var(--muted)}
+    .section-head{display:flex;justify-content:space-between;align-items:center;margin:34px 0 15px}.section-head h2{font:600 17px 'Space Grotesk';margin:0}.section-head span{font-size:12px;color:var(--muted)}
+    .lights{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.light-card{position:relative;overflow:hidden;padding:23px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(145deg,#142239,#101a29 72%);transition:border-color .2s,transform .2s}.light-card.active{border-color:#397c65}.light-top{display:flex;align-items:center;justify-content:space-between}.light-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:#26364c;color:#9aaac0}.light-card.active .light-icon{background:#1b493d;color:var(--green);box-shadow:0 0 28px #42d39220}.light-icon svg{width:25px;height:25px}.state{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);padding:7px 10px;border-radius:20px;background:#243146}.active .state{color:var(--green);background:#173b32}.light-card h3{font:600 20px 'Space Grotesk';margin:22px 0 5px}.pin{font-size:12px;color:var(--muted)}.control-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:25px;padding-top:17px;border-top:1px solid var(--line)}.control-label{font-size:12px;color:var(--muted)}.toggle{border:0;width:62px;height:34px;border-radius:30px;padding:4px;background:#344258;cursor:pointer;transition:background .2s}.toggle:after{content:'';display:block;width:26px;height:26px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 2px 5px #0005}.toggle[aria-checked=true]{background:#269b70}.toggle[aria-checked=true]:after{transform:translateX(28px)}.toggle:disabled{opacity:.5;cursor:wait}.toggle:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+    .notice{margin-top:18px;padding:13px 15px;border:1px solid #34445a;border-radius:12px;background:#111c2b;color:var(--muted);font-size:12px;line-height:1.6}.notice strong{color:var(--text)}.footer{display:flex;justify-content:space-between;gap:12px;margin-top:35px;padding-top:18px;border-top:1px solid var(--line);font-size:11px;color:#718098}.device-id{font-family:monospace;color:#a8b7cb}
+    @media(max-width:620px){.wrap{width:min(100% - 28px,520px);padding-top:20px}.top{margin-bottom:38px}.brand-sub{font-size:9px}.connection{font-size:10px;padding:8px 10px}.summary{gap:8px}.stat{padding:13px 11px}.stat-value{font-size:19px}.stat-label{font-size:9px}.lights{grid-template-columns:1fr;gap:12px}.light-card{padding:19px}.intro h1{font-size:34px}.footer{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="brand-icon">⌁</div>
+        <div><div class="brand-name">ESP Control</div><div class="brand-sub">Smart device dashboard</div></div>
+      </div>
+      <div class="connection" id="connection"><span class="dot"></span><span id="connectionText">Menghubungkan...</span></div>
+    </header>
+
+    <section class="intro">
+      <div class="eyebrow">IoT · Realtime control</div>
+      <h1>Kontrol lampu,<br>langsung dari sini.</h1>
+      <p>Kelola lampu ESP32 dari satu dashboard. Perubahan status dikirim ke Firebase dan diterima perangkat secara real-time.</p>
+    </section>
+
+    <section class="summary" aria-label="Ringkasan perangkat">
+      <div class="stat"><div class="stat-label">Total lampu</div><div class="stat-value">02 <small>perangkat</small></div></div>
+      <div class="stat"><div class="stat-label">Lampu menyala</div><div class="stat-value" id="onCount">— <small>/ 2</small></div></div>
+      <div class="stat"><div class="stat-label">Status perangkat</div><div class="stat-value" id="deviceStatus" style="font-size:17px">Menunggu</div></div>
+    </section>
+
+    <div class="section-head"><h2>Kontrol lampu</h2><span id="syncText">Menunggu sinkronisasi</span></div>
+    <section class="lights">
+      <article class="light-card" id="card-led1">
+        <div class="light-top">
+          <div class="light-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6m-5 4h4m-5-7.5a7 7 0 1 1 6 0c-.8.6-1 1.4-1 3.5h-4c0-2.1-.2-2.9-1-3.5Z"/><path d="M12 2v2m9 8h-2M5 12H3m15.4-6.4-1.4 1.4M7 7 5.6 5.6"/></svg></div>
+          <span class="state" id="state-led1">OFF</span>
+        </div>
+        <h3>Lampu 01</h3><div class="pin">ESP32 · GPIO 26 · LED 1</div>
+        <div class="control-row"><span class="control-label" id="label-led1">Lampu mati</span><button class="toggle" id="toggle-led1" role="switch" aria-checked="false" aria-label="Nyalakan lampu 1" disabled></button></div>
+      </article>
+      <article class="light-card" id="card-led2">
+        <div class="light-top">
+          <div class="light-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6m-5 4h4m-5-7.5a7 7 0 1 1 6 0c-.8.6-1 1.4-1 3.5h-4c0-2.1-.2-2.9-1-3.5Z"/><path d="M12 2v2m9 8h-2M5 12H3m15.4-6.4-1.4 1.4M7 7 5.6 5.6"/></svg></div>
+          <span class="state" id="state-led2">OFF</span>
+        </div>
+        <h3>Lampu 02</h3><div class="pin">ESP32 · GPIO 27 · LED 2</div>
+        <div class="control-row"><span class="control-label" id="label-led2">Lampu mati</span><button class="toggle" id="toggle-led2" role="switch" aria-checked="false" aria-label="Nyalakan lampu 2" disabled></button></div>
+      </article>
+    </section>
+
+    <div class="notice"><strong>Info koneksi</strong><br>Pastikan ESP32 terhubung ke Wi-Fi dan menggunakan Firebase URL serta Device ID yang sama. Kontrol akan aktif setelah koneksi database berhasil.</div>
+    <footer class="footer"><span>ESP Control Dashboard · Firebase Realtime Database</span><span class="device-id">esp32_virtual_001</span></footer>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqqeXCg9nDnIs5fygin-fvBxBqSLMOBYg",
+      authDomain: "wokwi-f4741.firebaseapp.com",
+      databaseURL: "https://wokwi-f4741-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "wokwi-f4741",
+      storageBucket: "wokwi-f4741.firebasestorage.app",
+      messagingSenderId: "1072976125268",
+      appId: "1:1072976125268:web:2c5472058da6417b72fcc1"
+    };
+
+    const DEVICE_ID = "esp32_virtual_001";
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const deviceRef = ref(db, `devices/${DEVICE_ID}`);
+    const states = { led1: false, led2: false };
+    let connected = false;
+
+    const $ = (id) => document.getElementById(id);
+    function setConnection(status, message) {
+      $("connection").className = "connection " + status;
+      $("connectionText").textContent = message;
+      $("deviceStatus").textContent = status === "online" ? "Terhubung" : status === "error" ? "Terputus" : "Menghubungkan";
+      connected = status === "online";
+      ["led1", "led2"].forEach((key) => { $("toggle-" + key).disabled = !connected; });
+    }
+    function render() {
+      let count = 0;
+      for (const key of ["led1", "led2"]) {
+        const on = states[key];
+        if (on) count++;
+        $("card-" + key).classList.toggle("active", on);
+        $("state-" + key).textContent = on ? "ON" : "OFF";
+        $("label-" + key).textContent = on ? "Lampu menyala" : "Lampu mati";
+        $("toggle-" + key).setAttribute("aria-checked", String(on));
+        $("toggle-" + key).setAttribute("aria-label", (on ? "Matikan " : "Nyalakan ") + (key === "led1" ? "lampu 1" : "lampu 2"));
+      }
+      $("onCount").innerHTML = count + ' <small>/ 2</small>';
+      $("syncText").textContent = "Status diperbarui real-time";
+    }
+
+    for (const key of ["led1", "led2"]) {
+      $("toggle-" + key).addEventListener("click", async () => {
+        if (!connected) return;
+        const button = $("toggle-" + key);
+        button.disabled = true;
+        try {
+          await set(ref(db, `devices/${DEVICE_ID}/${key}`), !states[key]);
+        } catch (error) {
+          console.error("Firebase write error:", error);
+          $("syncText").textContent = "Gagal menyimpan perubahan";
+          alert("Tidak dapat mengubah lampu. Periksa Firebase Database Rules dan koneksi internet.");
+        } finally {
+          button.disabled = !connected;
+        }
+      });
+    }
+
+    onValue(deviceRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      states.led1 = data.led1 === true;
+      states.led2 = data.led2 === true;
+      render();
+    }, (error) => {
+      console.error("Firebase listener error:", error);
+      setConnection("error", "Akses database gagal");
+      $("syncText").textContent = "Periksa konfigurasi dan Database Rules";
+    });
+
+    onValue(ref(db, ".info/connected"), (snapshot) => {
+      if (snapshot.val() === true) setConnection("online", "Firebase terhubung");
+      else setConnection("offline", "Firebase terputus");
+    });
+  </script>
+</body>
+</html>
